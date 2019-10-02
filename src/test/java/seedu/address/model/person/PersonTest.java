@@ -64,7 +64,7 @@ public class PersonTest {
 
         // same hashcode -> return true
         assertTrue(ALICE.hashCode() == ALICE.hashCode());
-        
+
         // null -> returns false
         assertFalse(ALICE.equals(null));
 

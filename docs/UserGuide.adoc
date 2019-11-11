@@ -34,7 +34,7 @@ Interested? Refer to <<Quick-Start>> below to get started. Enjoy!
 [[Quick-Start]]
 == Quick Start
 
-This section summarizes how you can quickly set up Mortago on your computer
+This section summarizes how you can quickly set up Mortago on your computer.
 
 === Setting Up
 .  Ensure you have `Java 11` or above installed in your Computer.
@@ -53,11 +53,11 @@ image::Ui.png[width="790"]
 Type the command in the command box and press kbd:[Enter] to execute it. +
 The following are examples of some commands you can try:
 
-* *`list -b`* : lists all bodies
+* *`list -b`* : lists all bodies.
 * *`add -w/name John Doe /sex male /dateJoined 12/12/2019`* :
 adds a worker named John Doe to the management system.
-* *`delete -w 1`* : deletes the worker with worker ID W000001
-* *`exit`* : exits the app
+* *`delete -w 1`* : deletes the worker with worker ID W000001.
+* *`exit`* : exits the app.
 
 // tag::commandspecs[]
 
@@ -97,11 +97,11 @@ The full list of attributes for each entity can be found in <<add, Section 3.1.1
 
 Here are some information you need in order to interpret the various command formats in this User Guide.
 
-* You can find that `ATTRIBUTES` in this User Guide are represented with the format: `/attributeName attributeValue`
+* You will find that `ATTRIBUTES` in this User Guide are represented with the format: `/attributeName attributeValue`
 ** You should always provide the `/attributeName`, exactly as it is stated in the User Guide, before specifying the details of the `attributeValue` that the entity has.
 ** For example, date of births in Mortago are represented using `/dob dateOfBirth`. Therefore, the `/attributeName` is `/dob` and `attributeValue` is `dateOfBirth`. If you wish to specify an entity born on 12 December 2000, you should key it as `/dob 12/12/2000`.
 
-* You may find that some `ATTRIBUTES` can only accept specific values, or that these values must follow certain format. You can refer to <<Valid-Values, Appendix 7.1>> for the full list of valid values or format for these `ATTRIBUTES`.
+* You may find that some `ATTRIBUTES` can only accept specific values, or that these values must follow a certain format. You can refer to <<Valid-Values, Appendix 7.1>> for the full list of valid values or format for these `ATTRIBUTES`.
 
 * You must enter `ATTRIBUTES` successively in a single-line command. Mortago does not prompt you to key in any mandatory
  `ATTRIBUTES` that you may have missed out.
@@ -190,8 +190,6 @@ add -f
 
 [TIP]
 Default status: `UNOCCUPIED`
-
-
 =======
 
 a|
@@ -217,34 +215,21 @@ add -b +
 Before specifying a `fridgeId`, ensure that a `fridge` with this id exists!
 |===
 
+[IMPORTANT]
+Please refer to <<Valid-Values, Appendix 7.1>> for a comprehensive list of valid values and formats for various attributes like sex, phone and dates.
 
 Example:
 
-|===
-
-| Command | Expected Output
-
-a|
-`add -w
+* `add -w
  /name Mary
  /phone 87654321
  /sex female
  /dateJoined 18/08/2019
  /designation Autopsy Technician`
-
-
-| Worker added
-
-a|
-`add -f`
-{nbsp} +
-
-
-
-| Fridge added
-
-a|
-`add -b
+** Adds a worker
+* `add -f`
+** Adds a fridge
+* `add -b
 /name John Doe
 /sex male
 /dob 12/12/1984
@@ -259,11 +244,7 @@ a|
 /cod Car Accident
 /details Heavy bleeding and head injury
 /organsForDonation NIL`
-
-
-| Body added
-
-|===
+** Adds a body
 // end::add[]
 
 // tag::update[]
@@ -271,9 +252,7 @@ a|
 [[update]]
 ==== Updating an entity: `update`
 
-You can update the attributes of a body or worker by entering an update command with the given format below.. +
-
-You have to indicate the entity type you want to update with a flag, as described in <<Command Format>>.
+You can update the attributes of a body or worker by entering an update command. You have to indicate the entity type you want to update with a flag, as described in section 3.
 [TIP]
 `-f` is not a valid flag for this command. Fridges are automatically updated when bodies are assigned or removed.
 
@@ -357,8 +336,9 @@ To update Jane Doe's designation: +
 |===
 | Command | Expected Output
 
-| `update -w /id 1 /designation Senior Autopsy Technician`
-| Designation of Jane Doe changed to Senior Autopsy Technician.
+| `update -w /id 1 /designation Manager`
+| Output box shows: This entity was successfully updated. ID Number: W00001 +
+Dashboard shows: Jane Doe's designation was changed to Manager.
 |===
 // end::update[]
 
@@ -390,7 +370,7 @@ Returns any workers having names `Betsy`, `Tim`, or `John`
 
 
 // tag::delete[]
-
+[[delete]]
 ==== Deleting an entry : `delete` +
 You can delete a body, worker or fridge entry, using its Identification Number by entering a delete command with the
 given format below. +
@@ -403,7 +383,7 @@ you want to delete a `Fridge` with id `F01`, you need to only enter `delete -f 1
 When you delete a `Body`:
 
 * Mortago automatically deletes its associated `Notifs`. You can learn more
-about `Notifs` in <<showNotifs, Section 3.2.1>>.
+about `Notifs` in <<notifs, Section 3.2.1>>.
 * If you had assigned a `Fridge` to this `Body`, Mortago automatically sets the status of the `Fridge` to
 `UNOCCUPIED`.
 
@@ -419,17 +399,17 @@ To delete his record:
 
 1) Type `delete -w 3` and press `ENTER` to execute it.
 
-image::delete-command/DeleteStep1.png[]
+image::DeleteStep1.png[]
 
 2) The result box displays the message as shown below.
 
-image::delete-command/DeleteStep2.png[]
+image::DeleteStep2.png[]
 
 3) And you can check that Jim Kerr is no longer in the list of workers.
 
-image::delete-command/DeleteStep3.png[width="500"]
+image::DeleteStep3.png[width="500"]
 
-// end::delete
+// end::delete[]
 
 // tag::clear[]
 
@@ -479,25 +459,35 @@ You can select a body and view its full details by entering a select command wit
 
 Format: `select id`
 
-Example: `select 1` +
+Example: `select 1`
 
-View a body with the ID B00000001.
+The following illustrates how you can use the `select` command.
 
+. Suppose you wish to select a body with ID B00000001.
 
+image::Select1.png[]
 
+[start=2]
+. Enter in `select 1` in the command box.
 
+image::Select2.png[]
+
+[start=3]
+. The body with ID B00000001 will be selected and you can view all its details on the side panel.
+
+image::Select3.png[]
 
 // end::select[]
 
 === General
 
 // tag::notifs[]
-[[showNotifs]]
+[[notifs]]
 ==== View notifs panel: `showNotifs` +
 This command allows you to view all `Notif`(s).
 
 A `Notif` is a notification associated with a `Body`. In Singapore, if the next-of-kin is not contactable for more
-than 24 hours from the time of admission of a `Body`,
+than 24 hours from the time of addition of a `Body` in Mortago,
 police must informed. Mortago removes the hassle of manually keeping track of the status of bodies! For the purpose of
 testing, instead of 24 hours, Mortago currently
 uses 10 seconds.
@@ -525,28 +515,28 @@ Imagine that a new `Body` (John Doe) has just arrived at your mortuary.
 1) Type the `add` command as specified in the example in <<add, Section 3.1.1>>. Currently the status of this `Body`
 is `ARRIVED`
 
-image::notif-command/Notif1.png[]
+image::Notif1.png[]
 
 2) Wait for 10 seconds. Mortago automatically changes the status of the `Body` to `CONTACT_POLICE` and shows
 you a
 pop-up
 notification.
 
-image::notif-command/Notif2.png[]
+image::Notif2.png[]
 
 3) Type `showNotif` and press `ENTER` to execute it.
 
-image::notif-command/Notif3.png[]
+image::Notif3.png[]
 
 4) The notification bell opens up a panel and lists all the bodies for which you need to contact the police. You
 can see John Doe's ID number B00000020 is in the list.
 
-image::notif-command/Notif4.png[]
+image::Notif4.png[]
 
 5) Suppose you have contacted the police, change the status of John Doe using the command `update -b /id 20 /status
 pending police report`. John Doe's ID is no longer listed in the notifs panel.
 
-image::notif-command/Notif5.png[]
+image::Notif5.png[]
 
 // end::notifs[]
 
@@ -581,10 +571,10 @@ Format: `undo` or `u`
 The `add`, `update`, `clear`, and `delete` commands can be undone.
 Commands like `list` or `find` cannot be undone.
 
-Commands caused by automated commands, such as an `UpdateCommand` caused by `Notif` can be undone and redone.
-For example, the automatic status change of a `Body` from `ARRIVED` to `CONTACT_POLICE`  is caused by an `UpdateCommand` and can be undone and redone. However, note that this feature does not support
-the `NotifCommand` itself. For example, if a `Body` was added and deleted before the `NotifCommand` associated with it has executed,
-undoing the deletion does not restore the `NotifCommand`.
+Commands caused by automated commands, such as an `update` command caused by a `Notif` can be undone and redone.
+For example, the automatic status change of a `Body` from `ARRIVED` to `CONTACT_POLICE` is caused by an `update` and can be undone and redone. However, note that this feature does not support
+the `Notif` itself. For example, if a `Body` was added and deleted before the `Notif` associated with it has executed,
+undoing the deletion does not restore the `Notif`.
 
 Though you can `undo` a `clear` command, note that you cannot redo any past undone commands after that.
 
@@ -960,7 +950,6 @@ and controlling peripherals +
 *Portable Document Format (PDF)* : a file format for capturing and sending electronic documents in exactly the intended format
 
 
-// tag::appendix[]
 == Appendix
 
 [[bodyStatus]]
@@ -977,11 +966,15 @@ The following table specifies all valid values, or format, that you must follow 
 
 |Sex
 a|
+The following values are valid for sex:
+
 * Male
 * Female
 
 |Body Status
 a|
+The following values are valid for body status:
+
 * Arrived
 * Pending Identification
 * Pending Claim
@@ -1007,7 +1000,7 @@ It is not necessary to include the time for certain `ATTRIBUTES` such as the dat
 |Path to Photo
 a|
 If you wish to provide a photo for the worker entry, please provide the absolute path of the image file.
-You can follow the steps <<Copy-File-Path, here>> to obtain the absolute path of the file.
+You can follow the steps <<Copy-File-Path, here>> to obtain the absolute path of the file. Only `.jpeg`, `.jpg` and `.png` files are valid for the application.
 
 |NRIC
 a|
@@ -1015,22 +1008,39 @@ A valid NRIC number has 9 alphanumeric letters in total, with an alphabetic lett
 
 |===
 
+// tag::appendix[]
+
 === Copy a file's absolute path into the clipboard
 
 anchor:Copy-File-Path[]
 
-The following steps guide you to copy the absolute path of a file into the clipboard.
+The following steps will guide you on how to copy the absolute path of a file into the clipboard.
 
-
-* For *Windows* User:
+* For *Windows* Users:
 . Navigate to the image file you wish to upload.
-. While holding down kbd:[Shift], right-click on the image file.
-. In the menu that appears, click `Copy as path`. The absolute path of the file is copied into your clipboard.
+. *While* holding down kbd:[Shift], right-click on the image file.
+. In the menu that appears, as seen in the figure below, click on `Copy as path` to copy the absolute path into your clipboard.
 
-* For *Mac* User:
++
+image::Appendix1.png[align="center", width=60%]
+
+
+* For *Mac* Users:
 . Navigate to the image file you wish to upload.
-. Right-click on the image file, then hold down the kbd:[Option] button.
-. In the menu that appears, click `Copy <file name> as Pathname`. The absolute path of the file is copied into your
-clipboard.
+. Right-click on the image file, *then* hold down the kbd:[Option] button.
+. In the menu that appears, click on `Copy <your file name> as Pathname`, as seen in red box in the figure below, to copy the absolute path into your clipboard.
 
++
+image::Appendix2.png[align="center", width=70%]
+
++
+
+Alternatively,
+
+. Navigate to the image file you wish to upload and click on it.
+. Press `Command` and `i` simultaneously to bring up `Get Info`, as seen in the figure below.
++
+image::Appendix3.png[align="center", width=60%]
++
+. Highlight the text next to `Where`, as seen in the red box in the figure above, then press `Command` and `c` simultaneously to copy the full path to the clipboard.
 // end::appendix[]

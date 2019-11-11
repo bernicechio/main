@@ -154,29 +154,23 @@ Classes used by multiple components are in the `seedu.addressbook.commons` packa
 
 This section describes some noteworthy details on how certain features are implemented.
 
-// tag:uniqueIdentificationNumber[]
+// tag::uniqueIdentificationNumber[]
+
 === Unique Identification Number
 
-In Mortago, each entity is assigned a unique `IdentificationNumber`.
+In Mortago, you will find that each entity is assigned a unique `IdentificationNumber`.
 
-* `IdentificationNumbers` in Mortago consist of two parts: the `String typeOfEntity` referring to whether it is a worker, body or fridge, and `Integer idNum` referring to its unique ID number.
-* Each `IdentificationNumber` is automatically generated within the application, based on the next sequential ID number available.
-* The generation of unique `IdentificationNumbers` allows the user to identify different entities solely based on their `IdentificationNumber`, without relying on attributes such
+* The `IdentificationNumber` for each entity is a central aspect of Mortago as most interactions with and identification of entities in the application are made through their `IdentificationNumbers`.
+* You can identify different entities solely based on their `IdentificationNumber` due to its uniqueness, without relying on attributes such
 as `name` which may have similar duplications within the system.
+* `IdentificationNumbers` in Mortago consist of two parts: `String typeOfEntity` that tells you whether it is a worker, body or fridge, and `Integer idNum` that refers to its unique ID number.
+* Each `IdentificationNumber` is automatically generated within the application, based on the next sequential ID number available.
+
 
 ==== Implementation
 
-The generation of unique `IdentificationNumbers` is facilitated by `UniqueIdentificationNumberMaps`.
-The class diagram below illustrates the relation between `IdentificationNumber` and `UniqueIdentificationNumberMaps`.
-
-.Unique `IdentificationNumber` Class Diagram
-image::UniqueIdentificationNumberClassDiagram.png[]
-
-===== The first consideration to examine is determining the next free number.
-
-Note that in the diagram above, `UniqueIdentificationNumberMaps` keeps three `HashMap`, one for each entity.
-In each `HashMap`, the `Integer` ID number serves as the key, which maps to the entity it is assigned to.
-This keeps track of the numbers currently assigned to all entities and allows the next free `Integer` to be assigned to a newly added entity. +
+The generation of unique `IdentificationNumbers` is facilitated by `UniqueIdentificationNumberMaps`. `UniqueIdentificationNumberMaps` keeps three `HashMap`, one for each entity.
+In each `HashMap`, the `Integer` ID number serves as the key, which maps to the entity it is assigned to. This keeps track of the numbers currently assigned to all entities and allows the next free `Integer` to be assigned to a newly added entity. +
 
 The code snippet below demonstrates how the next free number is determined.
 
@@ -201,7 +195,7 @@ This sequential iteration checks for any number that is not assigned to any work
 If there is an existing gap in the sequential iteration of numbers, this number is assigned to the newly added worker.
 If there is no gap available, the next highest number is assigned to the worker.
 
-===== Hence, this leads us to forumulate the execution sequence of generating a unique `IdentificationNumber` for a worker:
+This leads us to forumulate the execution sequence of generating a unique `IdentificationNumber` for a worker:
 
 . The user executes `add -w /name Zach ...` to add a new worker to Mortago.
 . `AddCommandParser` parses the given input and calls the `Worker` constructor.
@@ -214,14 +208,14 @@ The figure below illustrates the sequence diagram of the aforementioned steps.
 .Generation of unique `IdentificationNumber` Sequence Diagram
 image::UniqueIdentificationNumberSequenceDiagram.png[]
 
-Note that the execution sequence is similar for the generation of unique `IdentificationNumber` for fridges and bodies.
+You will find that the execution sequence will be similar for the generation of unique `IdentificationNumber` for fridges and bodies.
 
 ==== Design Considerations
 
 When designing this feature, it is important to keep in mind the scalability of the application.
-When the data set becomes large, the ID number can become arbitrarily large if gaps in the middle are not filled.
+When the number of entities grows exponentially, the ID number can become arbitrarily large if gaps in the middle are not (re)assigned.
 
-*Aspect: Tracking of numbers and determination of next free number*
+===== Aspect: Tracking of numbers and determination of next free number*
 
 * Alternative 1: Three counters that track the total number of each entity in the system and assigns the next highest number to the added entity.
 ** Pros:
@@ -236,70 +230,142 @@ When the data set becomes large, the ID number can become arbitrarily large if g
 ** Cons:
 *** Harder to implement, especially for unit testing since a unique `IdentificationNumber` cannot be duplicated usually.
 
-Alternative 2 is chosen due to the comprehensive benefits of utilizing `HashMap` in terms of:
+Alternative 2 is chosen due to the comprehensive benefits of utilizing `HashMap` given below:
 
 * Tracking of unique keys
 * Catering for deletion of ID numbers and filling of the gap
 * Increasing the ease of accessibility of mapped entities
 
 The difficulty in testing can be circumvented by executing `UniqueIdentificationNumberMaps::clearAllEntries()`
-before each unit test to reset the `HashMaps`. This resets the `HashMaps` and allows the newly added entities to start with the first ID number, simulating a fresh launch of the application.
+before each unit test. This resets the `HashMaps` and allows the newly added entities to start with the first ID number, simulating a fresh launch of the application.
+
 // end::uniqueIdentificationNumber[]
 
+// tag::photo[]
+=== Photo Feature
+
+When adding a worker in Mortago, you can assign a photo to the worker so as to identify your workers. This is especially useful when you are more visual oriented as this allows you to identify your workers more easily when sieving through a long list of workers.
+
+==== Implementation
+
+This section covers how the `Photo` feature is implemented. To gain a better overview of its implementation, you can refer to the following class diagram that illustrates how `Photo` and `Worker` are associated with the `Ui` component.
+
+.Class Diagram of Photo Feature
+image::PhotoClassDiagram.png[]
+
+Here, notice that a `WorkerCard` contains an `ImageView` which serves to display the `Photo`. The `ImageView` displays the `Photo` by first retrieving the file path of the photo through the `Worker` in `WorkerCard`. This is demonstrated in the following code snippet:
+
+```
+displayPhoto.setImage(new Image(worker.getPhoto().get().getPathToDataDirectory()));
+```
+
+This brings us to explain how `Photo` is constructed, as demonstrated in the following diagram and the sequence of steps further below.
+
+.Activity Diagram of Adding a Photo
+image::PhotoActivityDiagram.png[]
+
+. When the user wishes to add a photo, the user can do this through the add or update command.
+. Before constructing a `Photo` object, the validity of the absolute file path of the image is checked first through the `Photo::isValidPhoto(pathToPhoto)` method, as part of a defensive programming measure.
+[TIP]
+This method checks whether the image file exists, using `FileUtil::isFileExists(Path)` as seen in Figure 11, and whether it ends with the common image file extensions: `.jpeg`, `.jpg` and `.png`.
+. If the file is valid, the `Photo` object is constructed.
+. In its construction, the image file is copied into the `data/images/` directory (where all images are stored) and this path is saved as an instance variable, `dataDirectory`. The `Photo` is then assigned to an instance variable in `Worker`.
+[IMPORTANT]
+Copying the image file allows the application to retrieve it even when the user has deleted the original file.
+
+After construction of the `Photo`, when the image needs to be retrieved, `Photo#getPathToDataDirectory` needs to be called to obtain the modified file path to the image, which can then be used for display via the `ImageView` node. The following code snippet shows how the file path is modified so that it can be used directly for image retrieval and display.
+
+```
+    /**
+     * Returns the file path of the copied photo in the data directory.
+     * Intended for {@code ImageView} to reference to the photo.
+     */
+    public String getPathToDataDirectory() {
+        return "file://" + Paths.get(dataDirectory).toAbsolutePath().toUri().getPath();
+    }
+```
+
+Note that appending `file://` to the front is necessary for file retrieval.
+
+==== Design Considerations
+
+When designing `Photo`, it is important to consider the user profile. Given that our users are generally fast at typing and prefers a Command Line Interface, some thoughts had to be made to design how the user can upload the photo.
+
+===== Aspect: How the user uploads the photo
+
+* **Alternative 1 (current choice)**: Users must specify the absolute file path of the image file
+** Pros: This ensures accurate retrieval of the file.
+** Cons: Users require additional steps to obtain the absolute file path of the file.
+* **Alternative 2 (current choice)**: Users can upload their image file through a popup dialog
+** Pros: Graphical dialog allows visual navigation towards where the file is.
+** Cons: Users might find it slow to navigate through a graphical interface.
+
+Alternative 1 is chosen due to the user profile of our application. As they prefer typing over using the mouse, it will be much faster for them to provide the absolute file path as compared to navigating through a graphical dialog.
+
+// end::photo[]
+
 // tag::undoredo[]
-=== Undo/Redo feature
+=== Undo/Redo Feature
 The undo/redo feature allows you to undo a command that you have made or redo a command you have undone.
 
 ==== Implementation
 
-You can find the core of undo/redo in the undo/redo history of [purple]`ModelManager`.
-The history stores [purple]`UndoableCommands`, and an [purple]`UndoCommand` or [purple]`RedoCommand` will [purple]`undo()` or [purple]`redo()` commands in the history.
-The design of [purple]`UndoableCommand` uses the Command pattern, a common design pattern often used in software engineering.
+You can find the core of undo/redo in the undo/redo history of `ModelManager`.
+The history stores `UndoableCommands`, and an `UndoCommand` or `RedoCommand` will `undo()` or `redo()` commands in the history.
+The design of `UndoableCommand` uses the Command pattern, a common design pattern often used in software engineering.
 It allows each individual command to be undone/redone at a high-level without needing the specific command type to be known.
-Classes related to undo/redo and their relationships are shown in Figure 11.
+Classes related to undo/redo and their relationships are shown in Figure 12.
 
 .Class Diagram Showing the Architecture of Undo/Redo
 image::UndoClassDiagram.png[]
 
 ===== Architecture
 
-To start off, you will find two instances of [purple]`CommandHistory` in [purple]`ModelManager`. They are  stored internally as [purple]`commandHistory` and [purple]`undoHistory`.
-[purple]`commandHistory` stores previously executed commands while [purple]`undoHistory` stores previously undone commands.
-[purple]`CommandHistory` wraps a [purple]`Deque<UndoableCommand>`. Its methods imposes a [purple]`MAX_SIZE` which determines how many commands can be stored in the command history.
+To start off, you will find two instances of `CommandHistory` in `ModelManager`. They are  stored internally as `commandHistory` and `undoHistory`.
+`commandHistory` stores previously executed commands while `undoHistory` stores previously undone commands.
+`CommandHistory` wraps a `Deque<UndoableCommand>`. Its methods imposes a `MAX_SIZE` which determines how many commands can be stored in the command history.
 
-In [purple]`ModelManager`, four key operations to access and modify [purple]`CommandHistory` are implemented:
+In `ModelManager`, four key operations to access and modify `CommandHistory` are implemented:
 
-* [purple]`ModelManager#addExecutedCommand(UndoableCommand command)` -- Adds a command that was executed to the start of [purple]`commandHistory`.
-* [purple]`ModelManager#getExecutedCommand()` -- Removes the last command that was executed and added to [purple]`commandHistory` and returns it.
-* [purple]`ModelManager#addUndoneCommand(UndoableCommand command)` -- Adds a command that was undone to the start of [purple]`undoHistory`.
-* [purple]`ModelManager#getUndoneCommand()` -- Removes the last command that was undone and added to [purple]`undoHistory` and returns it.
+* `ModelManager#addExecutedCommand(UndoableCommand command)` -- Adds a command that was executed to the start of `commandHistory`.
+* `ModelManager#getExecutedCommand()` -- Removes the last command that was executed and added to `commandHistory` and returns it.
+* `ModelManager#addUndoneCommand(UndoableCommand command)` -- Adds a command that was undone to the start of `undoHistory`.
+* `ModelManager#getUndoneCommand()` -- Removes the last command that was undone and added to `undoHistory` and returns it.
 
-In the [purple]`Model` interface implemented by [purple]`ModelManager`, these four operations are respectively exposed as
-[purple]`Model#addExecutedCommand(UndoableCommand command)`, [purple]`Model#getExecutedCommand()`, [purple]`Model#addUndoneCommand(UndoableCommand command)`, and [purple]`Model#getUndoneCommand()`.
+In the `Model` interface implemented by `ModelManager`, these four operations are respectively exposed as
+`Model#addExecutedCommand(UndoableCommand command)`, `Model#getExecutedCommand()`, `Model#addUndoneCommand(UndoableCommand command)`, and `Model#getUndoneCommand()`.
 
-Next, the [purple]`UndoableCommand` stored in the [purple]`Model` is actually a normal [purple]`Command` that changes program state.
-The [purple]`UndoableCommand` class is an abstract class that extends the abstract [purple]`Command` class, as shown in Figure 11. Commands like [purple]`AddCommand` or [purple]`UpdateCommand` extends [purple]`UndoableCommand` instead of [purple]`Command`.
-Commands that don't change the user-visible program state, like [purple]`FindCommand`, can still inherit directly from [purple]`Command`.
+Next, the `UndoableCommand` stored in the `Model` is actually a normal `Command` that changes program state.
+The `UndoableCommand` class is an abstract class that extends the abstract `Command` class, as shown in Figure 12. Commands like `AddCommand` or `UpdateCommand` extends `UndoableCommand` instead of `Command`.
+Commands that don't change the user-visible program state, like `FindCommand`, can still inherit directly from `Command`.
 
-Here is where the Command pattern comes in. A class extending [purple]`UndoableCommand` must implement an additional method, [purple]`UndoableCommand#undo(Model model)`. This means that every child class of [purple]`UndoableCommand` has a custom `undo` implementation.
+Here is where the Command pattern comes in. A class extending `UndoableCommand` must implement an additional method, `UndoableCommand#undo(Model model)`. This means that every child class of `UndoableCommand` has a custom `undo` implementation.
 
-[purple]`UndoableCommand#redo(Model model)` is a concrete implementation of the `redo` mechanism and is inherited by all child classes.
+`UndoableCommand#redo(Model model)` is a concrete implementation of the `redo` mechanism and is inherited by all child classes.
 
-Lastly, undo/redo is initiated when user input creates an [purple]`UndoCommand` or [purple]`RedoCommand`. When either of them are executed, they respectively get the last
-executed or undone command from the [purple]`CommandHistory` in [purple]`ModelManager`. As the retrieved command is an instance of [purple]`UndoableCommand`, an attempt will be made to execute [purple]`UndoableCommand#undo(Model model)` or [purple]`UndoableCommand#redo(Model model)`.
+Lastly, undo/redo is initiated when user input creates an `UndoCommand` or `RedoCommand`. When either of them are executed, they respectively get the last
+executed or undone command from the `CommandHistory` in `ModelManager`. As the retrieved command is an instance of `UndoableCommand`, an attempt will be made to execute `UndoableCommand#undo(Model model)` or `UndoableCommand#redo(Model model)`.
 If it is successful, undo/redo is succesful. Otherwise, an error message is shown.
 
 This is the mechanism of undo/redo, from start to end.
-Below is an example of a usage scenario to help you visualise how undo/redo works.
 
-The sequence diagram below shows how an undo command works to undo a [purple]`ClearCommand`:
+The sequence diagram below shows how an undo command works to undo a `ClearCommand`:
 
 .Sequence Diagram Showing a ClearCommand Being Undone
 image::UndoClearSequenceDiagram.png[]
 
+NOTE: The lifeline for `UndoCommand` should end at the destroy marker (X) but due to a limitation of PlantUML, the lifeline reaches the end of diagram.
+
+If a `redo` command was executed afterwards, the `ClearCommand` would simply be executed again.
+
+The following activity diagram shows what happens when a user executes a new `UndoableCommand`. In this case, it is the `ClearCommand` being undone. The control flow is similar for other `UndoableCommands`; they only differ in the implementation of `undo()`.
+
+.Activity Diagram Showing the Execution Control Flow of a Command
+image::CommandProcessActivityDiagram.png[]
+
 ===== Defensive programming
-To defend against improper undoing or redoing, an [purple]`UndoableCommand` can only be added to the [purple]`commandHistory` or [purple]`undoHistory` of [purple]`ModelManager` through its [purple]`execute()` or [purple]`undo()` method.
-Additionally, [purple]`UndoableCommand` contains a small inner class, the enumeration [purple]`UndoableCommandState` which allows an [purple]`UndoableCommand` to have its state set to any value in the enumeration.
+To defend against improper undoing or redoing, an `UndoableCommand` can only be added to the `commandHistory` or `undoHistory` of `ModelManager` through its `execute()` or `undo()` method.
+Additionally, `UndoableCommand` contains a small inner class, the enumeration `UndoableCommandState` which allows an `UndoableCommand` to have its state set to any value in the enumeration.
 The values are as shown below.
 ----
     /**
@@ -310,7 +376,7 @@ The values are as shown below.
     }
 ----
 
-Before a command is undone or redone, the command's state is checked for validity. An example is shown below in the [purple]`redo()` method.
+Before a command is undone or redone, the command's state is checked for validity. An example is shown below in the `redo()` method.
 ----
     /**
      * Re-executes an UndoableCommand if it had been previously undone.
@@ -322,16 +388,9 @@ Before a command is undone or redone, the command's state is checked for validit
         return execute(model);
     }
 ----
-As shown in the code snippet, when an [purple]`UndoableCommand` is redone, the method first checks that its state was set to [purple]`UNDOABLE`.
-These states are only changed when a [purple]`Command#execute(Model model)` or [purple]`UndoableCommand#undo(Model model)` has successfully executed.
-Therefore, it is unlikely that an [purple]`UndoableCommand` will be unwittingly undone or redone in error.
-
-If a `redo` command was executed afterwards, the [purple]`ClearCommand` would simply be executed again.
-
-The following activity diagram shows what happens when a user executes a new [purple]`UndoableCommand`. In this case, it is the [purple]`ClearCommand` being undone. The control flow is similar for other [purple]`UndoableCommands`; they only differ in the execution of [purple]`undo()`.
-
-.Activity Diagram Showing the Execution Control Flow of a Command
-image::CommandProcessActivityDiagram.png[]
+As shown in the code snippet, when an `UndoableCommand` is redone, the method first checks that its state was set to `UNDOABLE`.
+These states are only changed when a `Command#execute(Model model)` or `UndoableCommand#undo(Model model)` has successfully executed.
+Therefore, it is unlikely that an `UndoableCommand` will be unwittingly undone or redone in error.
 
 ==== Design considerations
 
@@ -384,21 +443,23 @@ Alternative 1 was chosen as it causes almost no overhead, guarantees data integr
 
 ===== Aspect: Storing executed/undone commands
 
-* **Alternative 1 (current choice):** Store [purple]`UndoableCommand`(s) only.
+* **Alternative 1 (current choice):** Store `UndoableCommand`(s) only.
 ** Pros:
     *** Logic can be reused for both executed and undone commands.
     *** Easy to implement.
     *** Uses less space.
 ** Cons:
-    *** Loses some information about [purple]`Commands` that were previously executed.
-* **Alternative 2:** Store all [purple]`Commands`.
+    *** Loses some information about `Commands` that were previously executed.
+* **Alternative 2:** Store all `Commands`.
 ** Pros:
     *** No loss of information.
 ** Cons:
     *** Harder to implement. Requires differentiating between commands that have been undone and executed commands.
-    *** Needs extra space to store non-[purple]`UndoableCommand`(s) even though they are useless for undo/redo.
+    *** Needs extra space to store non-`UndoableCommand`(s) even though they are useless for undo/redo.
 
 // end::undoredo[]
+
+// tag::notifs[]
 
 === Notification Feature
 This feature in Mortago reminds a mortuary manager to contact the police when the next-of-kin of a body
@@ -430,7 +491,8 @@ instance of the class is instantiated.
 * `alert`: Refers to a `Runnable` function which checks if the current status of the body is `ARRIVED` and if so,
 changes it to `CONTACT_POLICE`.
 
-* `notifCreationTime`: Refers to a `Date` object which stores the date and time at the point of addition of the body.
+* `notifCreationTime`: Refers to a `Date` object which stores the date and time at the point of addition of the body
+in Mortago.
 
 The constructor of a `NotifCommand` must be provided with the following parameters:
 
@@ -442,12 +504,12 @@ It will be explained in further detail later. Currently, this value is set to `1
 
 * `timeUnit`: Refers to a `TimeUnit` associated with the `period`. Currently, this value is set to `TimeUnit.SECONDS`.
 
-The following class diagram (Figure 14) models the relationships and dependencies among classes in this feature:
+The following class diagram (Figure 15) models the relationships and dependencies among classes in this feature:
 
 .Notification Class Diagram
 image::NotifCommandClassDiagram.png[]
 
-The following sequence diagrams (Figure 15 and 16) illustrate the execution of the notification feature:
+The following sequence diagrams (Figure 16 and 17) illustrate the execution of the notification feature:
 
 .Notification Command Sequence Diagram
 image::NotifCommandSequenceDiagram.png[]
@@ -563,6 +625,8 @@ time and `notifCreationTime` exceeds `period`.
 Alternative 1 is the current choice because we want the app to be responsive and scalable in the long term. The
 notification bell is placed beside the command box to prevent instances of user forgetting to contact the police.
 
+// end::notifs[]
+
 // tag::genpdf[]
 === Generate PDF Feature
 This feature allows manager to automatically generate different kinds of reports with three commands: `genReport`, `genReports` and `genReportSummary`.
@@ -577,7 +641,7 @@ Additionally, it implements the following operations:
 * `ReportGenerator#generateAll(sign)` -- Creates reports containing sign name of manager in a PDF file for all bodies registered in Mortago.
 * `ReportGenerator#generateSummary(sign)` -- Creates a tabular summary report containing sign name of manager  in a PDF file for all bodies registered in Mortago.
 
-The following sequence diagram (Figure 17) shows how the generate operation works:
+The following sequence diagram (Figure 19) shows how the generate operation works:
 
 .Sequence diagram when `genReport 1 John Doe` is executed by manager.
 image::GenReportSequenceDiagram.png[]
@@ -586,7 +650,7 @@ NOTE: The lifeline for `GenReportCommandParser` and `ReportGenerator` should end
 
 The `genReport <BODY_ID> (sign)` command calls `ReportGenerator#generate(body, sign)`, which creates the document.
 
-The following activity diagram (Figure 18) summarizes what happens when manager executes a `genReport <BODY_ID> (sign)` command:
+The following activity diagram (Figure 20) summarizes what happens when manager executes a `genReport <BODY_ID> (sign)` command:
 
 .Activity diagram when `genReport 1 John Doe` is executed by manager.
 image::GenReportActivityDiagram.png[]
@@ -601,7 +665,7 @@ The following code snippet from `GenReportCommand.java` demonstrates how an erro
             throw new CommandException(MESSAGE_REPORT_NOT_GENERATED);
         }
 
-The following class diagram (Figure 19) models the relationships and dependencies among classes in this feature:
+The following class diagram (Figure 21) models the relationships and dependencies among classes in this feature:
 
 .Class diagram for generate PDF feature.
 image::ReportGeneratorClassDiagram.png[]
@@ -642,130 +706,9 @@ Alternative 1 is the current choice because this implementation does not require
 Alternative 1 is the current choice because manager will be able to save time and reduce work-related stress when manager is able to view an organised report.
 // end::genpdf[]
 
-=== Logging
-
-We are using `java.util.logging` package for logging. The `LogsCenter` class is used to manage the logging levels and logging destinations.
-
-* The logging level can be controlled using the `logLevel` setting in the configuration file (See <<Implementation-Configuration>>)
-* The `Logger` for a class can be obtained using `LogsCenter.getLogger(Class)` which will log messages according to the specified logging level
-* Currently log messages are output through: `Console` and to a `.log` file.
-
-*Logging Levels*
-
-* `SEVERE` : Critical problem detected which may possibly cause the termination of the application
-* `WARNING` : Can continue, but with caution
-* `INFO` : Information showing the noteworthy actions by the App
-* `FINE` : Details that is not usually noteworthy but may be useful in debugging e.g. print the actual list instead of just its size
-
-[[Implementation-Configuration]]
-=== Configuration
-
-Certain properties of the application can be controlled (e.g user prefs file location, logging level) through the configuration file (default: `config.json`).
-
-// tag::ui[]
-=== User Interface and Dashboard Enhancement
-
-The dashboard of Mortago plays a key part in presenting a sleek, organised, and concise overview to the entities in the system.
-Thus, designing an aesthetic and functional dashboard is a crucial aspect for Mortago.
-
-==== Surface Design and Coloring
-
-Mortago draws upon the guidelines specified in https://material.io/design/color/dark-theme.html#[Material.io] to design a dark theme
-that enhances visual ergonomics and minimises eye strain due to the bright luminance emitted by screens.
-
-*Visual Contrast Between Surfaces and Text*
-
-With reference to  Web Content Accessibility Guidelines’ (WCAG), the guidelines recommend that the contrast level
-between dark surfaces and white text to be at least 15:8:1 to ensure visual accessibility.
-Thus, the following color values are set within Mortago:
-
-
-|===
-|Aspect of Mortago |Color |Preview
-
-|Background
-|derive(#121212, 25%)
-a| image::Background Color.png[]
-
-|Surface
-|#121212
-a| image::Surface Color.png[]
-
-|Primary
-|#FF7597
-a| image::Primary Color.png[]
-|===
-
-
-The background color uses the `derive` function in `JavaFX`, which computes a color that is brighter or darker than the original,
-based on the brightness offset supplied. Here, notice that the background color is brighter than the surface color, as opposed to what Material.io dictates.
-This is because bulk of the screen space in the Mortago is taken up by surfaces to optimize the amount of information available to the user,
-hence by giving surfaces a darker brightness, this improves *overall* accessibility and visual ergonomics.
-In addition, this achieves elevation between surfaces and the background, which is aided by drop shadows by surfaces as well.
-
-The primary color is desaturated to reach a WCAG's AA standard of minimally 4:5:1.
-This facilitates a mild yet impressionable visual aspect to Mortago while minimizing eye strain, as saturated colors can cause optical vibrations against the dark surface and exacerbate eye strain.
-
-==== Replacing Window's Title Bar
-
-In spirit with producing a sleek design, the standard Windows platform title bar was removed. This exposes the user interface to become one that is self-contained, while providing extra space at the top.
-
-*Removing Window's Title Bar*
-
-The following code snippet was placed in `MainApp#start()` to achieve this.
-
-```
-primaryStage.initStyle(StageStyle.TRANSPARENT);
-```
-
-Note that this has to be done before the stage is shown. Otherwise, the application will close automatically upon running.
-
-However, with this removal, the default windows functions such as the default OS close button will be inevitably removed as well. Hence, these buttons will have to be rebuilt into the application.
-
-*Rebuilding Window Functions*
-
-The following image illustrates the minimise, maximise and exit buttons rebuilt into the menu bar.
-
-(insert photo)
-
-Each button was assigned its respective handler method, based on different events.
-
-. Exit Button
-* The method for exiting the application has already been implemented in `handleExit()`. Thus, setting the handler for the exit button to this method within the `MainWindow.fxml` file is sufficient.
-
-. Minimise Button
-* Minimisation of the application is implemented such that when the user clicks on the  minimise button, it triggers an `onMouseClicked` event that calls the following code.
-```
-primaryStage.setIconified(true)
-```
-
-[start = 3]
-. Maximise Button
-* Maximisation is implemented similarly to minimization. When the maximise button is clicked *initially*, it triggers a mouse click event, which is handled by the following code snippet.
-
-```
-maximiseButton.setOnMouseClicked(click -> {
-            primaryStage.setMaximized(true);
-            maximiseButton.setId("restoreButton");
-        });
-```
-
-* However, when the button is clicked for the second time, the window is restored to its pre-maximised size. In order to implement this, a handler for the `onMousePressed` event has to be set, as seen in the following code snippet.
-
-```
-maximiseButton.setOnMousePressed(click -> {
-            primaryStage.setMaximized(false);
-            maximiseButton.setId("maximisevButton");
-        });
-```
-
-Finally, the last functionality to rebuilt is the resizability of the Window. This implementation is adapted from a https://stackoverflow.com/questions/19455059/allow-user-to-resize-an-undecorated-stage[post] in StackOverFlow. Briefly,  `ResizableWindow::enableResizableWindow()` allows the Windows to be resizable by implementing a helper class `ResizeListener`. The helper class listens to mouse events and tracks the mouse's movements to pinpoint the coordinates of the mouse. This determines the change in size of the Window, which will then be resized accordingly.
-
-
-// end::ui[]
 // tag::statistics[]
-=== Statistics feature
-==== Current Implementation
+=== Statistics Feature
+==== Implementation
 
 The statistics feature appears as a line chart of the number of bodies admitted over the past 10 days (default view) and is facilitated by `LineChartPanel`. It extends `UiPart` with an internal storage of the number of bodies admitted per day over the past 10 days. The line chart is part of the user interface and is initialised automatically when Mortago is launched. Users can switch the view to a specified week, month, or view.
 
@@ -822,6 +765,171 @@ Currently the line chart supports four types of time frames as aforementioned. B
 ** Cons: Implementation is difficult.
 
 //end::statistics[]
+
+// tag::ui[]
+=== User Interface and Dashboard Enhancement
+
+The dashboard of Mortago plays a key part in presenting a sleek, organised, and concise overview to the entities in the system.
+Thus, designing an aesthetic and functional dashboard is a crucial aspect for Mortago.
+
+==== Surface Design and Coloring
+
+This section illustrates the motivations made behind Mortago's color scheme.
+
+===== 4.6.1.1. Implementation
+
+Mortago draws upon the guidelines specified in https://material.io/design/color/dark-theme.html#[Material.io] to design a dark theme
+that enhances visual ergonomics and minimises eye strain due to the bright luminance emitted by screens.
+
+*Designing the Visual Contrast Between Surfaces and Text*
+
+With reference to  Web Content Accessibility Guidelines’ (WCAG), the guidelines recommend that the contrast level
+between dark surfaces and white text to be at least 15:8:1 to ensure visual accessibility.
+Thus, the following color values that complies with the above standards are chosen:
+
+
+|===
+|Aspect of Mortago |Color |Color Preview
+
+|Background
+|derive(#121212, 25%)
+a| image::Background Color.png[]
+
+|Surface
+|#121212
+a| image::Surface Color.png[]
+
+|Primary
+|#FF7597
+a| image::Primary Color.png[]
+|===
+
+
+The background color uses the `derive` function in `JavaFX`, which computes a color that is brighter or darker than the original,
+based on the brightness offset supplied.
+The primary color is also desaturated to reach a WCAG's AA standard of minimally 4:5:1.
+This facilitates a mild yet impressionable visual aspect to Mortago while minimizing eye strain, as saturated colors can cause optical vibrations against the dark surface and exacerbate eye strain.
+
+===== 4.6.1.2. Design Considerations
+
+This section details an aspect considered when designing Mortago's color scheme.
+
+===== Aspect: The contrast in brightness between the background and surfaces
+
+
+* **Alternative 1 (current choice)**: Background is brighter than the surface.
+** Pros: Drop shadows designed to simulate elevation are more realistic
+** Cons: A deviation from what Material.io dictates
+
+* **Alternative 2**: Background is darker than the surface.
+** Pros: A different representation of elevation can be achieved
+** Cons: Overall visual brightness will be brighter compared to Alternative 1
+
+Alternative 1 was chosen because, aside from the pros that it has to offer, bulk of the screen space in the Mortago is taken up by surfaces to optimize the amount of information available to the user, hence by giving surfaces a darker brightness, this improves *overall* visual ergonomics.
+
+==== Replacing Window's Title Bar
+
+This section details how the default window's title bar is replaced with a custom title bar.
+
+===== 4.6.2.1. Implementation
+
+In spirit with designing a sleek and functional dashboard, the standard Windows platform title bar was removed. This exposes the user interface to become one that is self-contained, while providing extra space at the top that allows more details to be shown to the user.
+
+*How the window's title bar was removed*
+
+The following code snippet demonstrates how the title bar was removed.
+
+```
+primaryStage.initStyle(StageStyle.TRANSPARENT);
+```
+
+Note that this code was placed in `MainApp#start()` and has to be done before the stage is shown. Otherwise, the application will close automatically upon running.
+
+However, with this removal, the default windows functions such as the default OS close button will inevitably be removed as well. Hence, these buttons will have to be rebuilt into the application.
+
+*How the default window functions were rebuilt*
+
+This section demonstrates how the default window function were rebuilt into the application.
+
+Three buttons were manually created and customised to simulate the original window buttons. Each button was assigned to its respective handler method, based on different events. The following details the function of each button is recreated:
+
+. Exit Button
+* The method for exiting the application has already been implemented in `handleExit()` in Address Book 3. Thus, setting the handler for the exit button to this method within the `MainWindow.fxml` file is sufficient.
+
+. Minimise Button
+* Minimisation of the application is implemented such that when the user clicks on the  minimise button, it triggers an `onMouseClicked` event that calls `primaryStage.setIconified(true)` which minimises the window. Hence, setting the `onMouseClicked` handler to call this function is sufficient to implement minimisation through this button..
+
+. Maximise Button
+* Maximisation is implemented slightly different compared to minimisation. When the maximise button is clicked *initially*, the window should be maximised. When the button is clicked for the second time, the window should be restored to its pre-maximised size. Hence, notice that this button has two functions: maximisation and restoration. This switch in function is achieved via the following code snipped shown below.
++
+```
+    /**
+     * Enables the maximization and restoration of the window.
+     */
+    private void maximiseRestore() {
+        if (primaryStage.isMaximized()) {
+            primaryStage.setMaximized(false);
+            if (primaryStage.getScene().getWindow().getY() < 0) {
+                primaryStage.getScene().getWindow().setY(0);
+            }
+            maximiseButton.setId("maximiseButton");
+        } else {
+            Rectangle windowBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+            primaryStage.setMaximized(true);
+            primaryStage.setHeight(windowBounds.height);
+            primaryStage.setWidth(windowBounds.width);
+            maximiseButton.setId("restoreButton");
+        }
+    }
+```
+
+* The `onMouseClicked` handler is set to call the above function such that when the button is clicked, if the window is maximised, the window will be restored to its original size, and if the window is not maximised, the window will be maximised.
+* Notice also that the button is assigned to different `FXML` ids for the `if` and `else` blocks. This allows the button image to change accordingly, which is defined in the `DarkTheme.css` stylesheet.
+
+Finally, the last thing is to rebuild the resizability of the window.
+The implementation of this feature is adapted from this hyperlinked https://stackoverflow.com/questions/19455059/allow-user-to-resize-an-undecorated-stage[post] in StackOverFlow. Briefly,  `ResizableWindow::enableResizableWindow()` allows the Windows to be resizable by implementing a helper class `ResizeListener`. The helper class listens to mouse events and tracks the mouse's movements to pinpoint the coordinates of the mouse. This determines the change in size of the Window, which will then be resized accordingly.
+
+===== 4.6.2.2. Design Consideration
+
+The following section details an aspect to consider when designing the title bar.
+
+===== Aspect: Designing the default window's title bar
+
+
+* **Alternative 1 (current choice)**: Replace the default title bar with a custom title bar
+** Pros: Sleek interface that is pleasing to the eye and showcases a comprehensive product design
+** Cons: Default window functions have to be rebuilt into the application
+
+* **Alternative 2**: Retain the default title bar
+** Pros: Window functions will be perfectly working
+** Cons: The default title bar does not fit into the theme of the user interface
+
+Alternative 1 was chosen despite the need to rebuild the default window functions as it is imperative to produce a complete product design. The visual appearance of the dashboard is a significant feature of the application as it details all the necessary information to the user. Hence, a product design that is visually appealing is necessary to attract more users and gain traction into opting our application.
+
+// end::ui[]
+
+=== Logging
+
+We are using `java.util.logging` package for logging. The `LogsCenter` class is used to manage the logging levels and logging destinations.
+
+* The logging level can be controlled using the `logLevel` setting in the configuration file (See <<Implementation-Configuration>>)
+* The `Logger` for a class can be obtained using `LogsCenter.getLogger(Class)` which will log messages according to the specified logging level
+* Currently log messages are output through: `Console` and to a `.log` file.
+
+*Logging Levels*
+
+* `SEVERE` : Critical problem detected which may possibly cause the termination of the application
+* `WARNING` : Can continue, but with caution
+* `INFO` : Information showing the noteworthy actions by the App
+* `FINE` : Details that is not usually noteworthy but may be useful in debugging e.g. print the actual list instead of just its size
+
+[[Implementation-Configuration]]
+=== Configuration
+
+Certain properties of the application can be controlled (e.g user prefs file location, logging level) through the configuration file (default: `config.json`).
+
+
+
 
 // tag::dataencryption[]
 === [Proposed] Data Encryption
@@ -1071,7 +1179,7 @@ Use case ends.
 1.  Mortuary manager wants to be reminded of the next line of action if next of kin cannot be contacted within 24 hours.
 2.  Mortago maintains a record of all the notifications about bodies until their status is
 changed.
-3.  Mortago shows pop-up notification after 24 hours from the point of arrival of the body in the mortuary.
+3.  Mortago shows pop-up notification after 24 hours from the point of admission of the body in the mortuary.
 +
 Use case ends.
 
@@ -1160,26 +1268,8 @@ A text-based user interface (UI) used to view and manage computer files
 [[graphical-user-interface]] Graphical User Interface (GUI)::
 An interface through which a user interacts with electronic devices such as computers, hand-held devices and other appliances. This interface uses icons, menus and other visual indicator (graphics) representations to display information and related user controls, unlike text-based interfaces, where data and commands are in text
 
-
 [[system-time]] System-Time::
 A computer's current time and date
-
-[appendix]
-== Product Survey
-
-*Product Name*
-
-Author: ...
-
-Pros:
-
-* ...
-* ...
-
-Cons:
-
-* ...
-* ...
 
 [appendix]
 == Instructions for Manual Testing
@@ -1202,6 +1292,26 @@ These instructions only provide a starting point for testers to work on; testers
 .. Resize the window to an optimum size. Move the window to a different location. Close the window.
 .. Re-launch the app by double-clicking the jar file. +
    Expected: The most recent window size and location is retained.
+
+=== Adding an Entity
+* Adding a new Body
+.. Test case: `add -b /name John Doe /sex male /dod 11/11/2019 /doa 11/11/2019` +
+   Expected: The body is added and displayed on the dashboard.
+
+* Adding a new Fridge
+.. Test case: `add -f` +
+   Expected: The fridge is added and displayed on the dashboard.
+
+* Adding a new Worker
+.. Test case: `add -w /name Jahn Daah /sex male /dateJoined 11/11/2019` +
+   Expected: The worker is added and displayed on the dashboard.
+
+
+=== Updating a Body
+* Updating a body while all bodies are listed
+.. Prerequisites: List all bodies using the `list -b` command. There is at least one body in the list.
+.. Test case: `update -b /id 1 /name Polly` +
+    Expected: The name of the body with ID 1 changes to Polly.
 
 === Deleting a Body
 
@@ -1229,10 +1339,109 @@ These instructions only provide a starting point for testers to work on; testers
 .. Other incorrect generate report commands to try: `genReport`, `genReport x` (where x is larger than the list size) +
    Expected: Similar to previous.
 
+// tag::statsManualTesting[]
+
+=== Using the Line Chart and Stats Command
+
+* Changing the time frame of the line's chart horizontal axis
+
+.. Prerequisites: None. The line chart is automatically displayed, with the last ten days as the default time frame.
+.. Test case 1: `stats /week 25/10/2019` +
+   Expected: The line chart will show the seven days of the week that contains the day 25/10/2019. 25/20/2019 is a Friday but the line chart will show from Monday to Sunday. The label of the horizontal axis will change to "Day".
+.. Test case 2: `stats /month 10/2019` +
+   Expected: The line chart will show the 31 days of month of October, 2019. All dates will be shown on the horizontal axis but will be in a shortened format. The label of the horizontal axis will change to "October 2019".
+.. Test case 3: `stats /month 2/2019` +
+   Expected: The line chart will show the 28 days of month of February, 2019. All dates will be shown on the horizontal axis but will be in a shortened format. The label of the horizontal axis will change to "February 2019".
+.. Test case 4: `stats /year 2019` +
+   Expected: The line chart will show the 365 days of year 2019. Dates are in a shortened format but not all dates will be shown on the horizontal axis due to space constraint. The label of the horizontal axis will change to be "Year 2019".
+.. Test case 5: `stats /year 2016` +
+   Expected: The line chart will show the 366 days of leap year 2016. Not all dates will be shown on the horizontal axis due to space constraint. The label of the horizontal axis will change to be "Year 2016".
+.. Test case 6: `stats` +
+   Expected: The line chart will show the last ten days from the current date. The label of the horizontal axis will change to be "Day".
+.. Incorrect stats commands to try: `stats 9/2019`, `stats 2019`, `stats /week 40/23/2019`, `stats /month 40/2009`
+Expected: An error message will appear informing you that the command format is invalid or the date entered is invalid.
+
+* Testing the dynamism of the line chart by adding and deleting bodies
+
+.. Prerequisites: The time frame of the line chart should be changed to include the date of admission of the body that is going to be added.
+.. Test case 1: `add -b /name Jonathan Bergeson /sex male /dod 14/11/2019 /doa 14/11/2019` +
+   Expected: The y-value for the date 14/11/2019 automatically decreases by 1.
+.. Test case 2: `delete -b <ID number of the previously added body>` +
+   Expected: The y-value for the date 14/11/2019 automatically decreases by 1.
+// end::statsManualTesting[]
+
+// tag::filterManualTesting[]
+
+=== Filter entries by attributes
+
+* Filter bodies by a combination of at least on attribute.
+
+.. Prerequisites: List all bodies for better viewing of the entries.
+.. Test case 1: `filter -b /sex female` +
+   Expected: Mortago will list only bodies that are female. The command result will specify how many bodies fit the criteria (0 if none).
+.. Test case 2: `filter -b /sex male /status pending police report` +
+   Expected: Mortago will list only bodies that are female and needs a police report written for it. The command result will specify how many bodies fit the criteria (0 if none).
+.. Test case 3: `filter -b /sex male /organsForDonation kidney liver /status arrived` +
+   Expected: Mortago will list only bodies that are male, donating kidney and liver, and has the status arrived. The command result will specify how many bodies fit the criteria (0 if none).
+.. Test case 4: `filter -b /status hello world` +
+   Expected: Mortago will not list any body and the command result will read "0 bodies listed!" as that status does not exist.
+.. Test case 5: `filter /sex male /cod car accident` +
+   Expected: An invalid command error will be thrown and the command result will display it as no flag was given.
+.. Incorrect filter commands to try: `filter`, `filter -b`, `filter -a`
+Expected: An error message will appear informing you that the command format is invalid.
+
+* Filter workers by a combination of at least on attribute.
+
+.. Prerequisites: List all workers for better viewing of the entries.
+.. Test case 1: `filter -b /sex female` +
+   Expected: Mortago will list only female workers. The command result will specify how many bodies fit the criteria (0 if none).
+.. Test case 2: `filter -w /sex male /designation coroner` +
+   Expected: Mortago will list only male coroners. The command result will specify how many bodies fit the criteria (0 if none).
+.. Test case 3: `filter -w /employmentStatus hello world` +
+   Expected: Mortago will not list any body and the command result will read "0 bodies listed!" as that status does not exist.
+.. Test case 4: `filter /sex male /employmentStatus full-time` +
+   Expected: An invalid command error will be thrown and the command result will display it as no flag was given.
+.. Incorrect filter commands to try: `filter`, `filter -b`, `filter -a`
+Expected: An error message will appear informing you that the command format is invalid.
+
+// end::filterManualTesting[]
+
+=== Undoing/redoing a command
+
+* Undoing an `AddCommand`
+.. Prerequisites: An entity was added to Mortago in the previous executed command.
+.. Test case: `undo` +
+    Expected: The added entity is removed from Mortago.
+* Undoing an `UpdateCommand`
+.. Prerequisites: A body or worker in Mortago was updated in the previous executed command.
+.. Test case: `undo` +
+    Expected: The fields of the body or worker that was updated has gone back to its original state.
+* Undoing a `DeleteCommand`
+.. Prerequisites: An entity in Mortago was deleted in the previous executed command.
+.. Test case: `undo` +
+    Expected: The entity deleted reappears in Mortago.
+* Undoing a `ClearCommand`
+.. Prerequisites: A `ClearCommand` was executed in the previous executed command.
+.. Test case: `undo` +
+    Expected: All entities existing in Mortago before the `ClearCommand` was executed reappears on the dashboard.
+* Redoing these commands
+.. Prerequisites: You have just finished executing one of the above `undo` test cases.
+.. Test case: `redo` +
+    Expected: Mortago's state goes back to the `undo` test case's prerequisite.
+
 === Saving Data
+* Saving your changes
+.. Add a body to Mortago using this command: `add -b /name Agavoides Echeveria /sex male /dod 12/12/2018 /doa 22/10/2019`
+.. Notice that the body has appeared on the dashboard.
+.. Close Mortago and reopen it to verify that the change was saved.
 
-. Dealing with missing/corrupted data files
+* Dealing with missing or corrupted data files
 
-.. _{explain how to simulate a missing/corrupted file and the expected behavior}_
+.. Go to the folder that Mortago is stored in.
+.. Delete every file except Mortago's .jar file.
+.. Run the jar file again to start a new, empty data file.
 
-_{ more test cases ... }_
+* Simulating a corrupted data file
+.. Go to the folder that Mortago is stored in and locate the data folder. addressbook.json will be found in the data folder.
+.. Add an 's' to 'bodies' in line 3 of the file.
+.. Run Mortago again. It will start Mortago with a new, empty data file.
